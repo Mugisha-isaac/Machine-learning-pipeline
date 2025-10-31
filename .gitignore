@@ -1,0 +1,98 @@
+# =====================================
+# Python
+# =====================================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+.env
+venv/
+.venv/
+env/
+ENV/
+build/
+dist/
+pip-wheel-metadata/
+*.log
+
+# =====================================
+# IDE / Editors
+# =====================================
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# =====================================
+# OS files
+# =====================================
+.DS_Store
+Thumbs.db
+
+# =====================================
+# Docker
+# =====================================
+# Ignore local volumes and temp files
+postgres_data/
+mongo_data/
+*.pid
+*.seed
+*.tar
+*.bak
+
+# =====================================
+# Byte-compiled / optimized / DLL files
+# =====================================
+*.pyc
+*.pyo
+*.pyd
+
+# =====================================
+# Test & coverage
+# =====================================
+.pytest_cache/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+htmlcov/
+
+# =====================================
+# FastAPI / Uvicorn
+# =====================================
+*.db
+*.sqlite3
+*.sqlite
+uvicorn.log
+
+# =====================================
+# Environment & Secrets
+# =====================================
+.env.local
+.env.development
+.env.production
+.env.test
+secrets.json
+config.json
+
+# =====================================
+# MyPy / Type checker
+# =====================================
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# =====================================
+# Pyre type checker
+# =====================================
+.pyre/
+
+# =====================================
+# Optional: ignore compiled migrations or cache
+# =====================================
+alembic/versions/__pycache__/
