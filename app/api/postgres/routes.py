@@ -568,3 +568,84 @@ def delete_healthcare_access(access_id: int, db: Session = Depends(get_postgres_
     db.delete(db_access)
     db.commit()
     return {"message": "Healthcare access record deleted successfully"}
+
+# ==================== LATEST RECORDS ENDPOINTS ====================
+
+@router.get("/patients/latest",
+    response_model=List[PatientResponse],
+    summary="Get latest patients",
+    description="Retrieve the most recently created patient records"
+)
+def get_latest_patients(limit: int = 10, db: Session = Depends(get_postgres_session)):
+    try:
+        patients = db.query(models.Patient).order_by(models.Patient.PatientID.desc()).limit(limit).all()
+        return patients
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get("/health-conditions/latest",
+    response_model=List[HealthConditionResponse],
+    summary="Get latest health conditions",
+    description="Retrieve the most recently created health condition records"
+)
+def get_latest_health_conditions(limit: int = 10, db: Session = Depends(get_postgres_session)):
+    try:
+        conditions = db.query(models.HealthCondition).order_by(models.HealthCondition.ConditionID.desc()).limit(limit).all()
+        return conditions
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get("/lifestyle-factors/latest",
+    response_model=List[LifestyleFactorResponse],
+    summary="Get latest lifestyle factors",
+    description="Retrieve the most recently created lifestyle factor records"
+)
+def get_latest_lifestyle_factors(limit: int = 10, db: Session = Depends(get_postgres_session)):
+    try:
+        lifestyle_factors = db.query(models.LifestyleFactor).order_by(models.LifestyleFactor.LifestyleID.desc()).limit(limit).all()
+        return lifestyle_factors
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get("/health-metrics/latest",
+    response_model=List[HealthMetricResponse],
+    summary="Get latest health metrics",
+    description="Retrieve the most recently created health metric records"
+)
+def get_latest_health_metrics(limit: int = 10, db: Session = Depends(get_postgres_session)):
+    try:
+        metrics = db.query(models.HealthMetric).order_by(models.HealthMetric.MetricsID.desc()).limit(limit).all()
+        return metrics
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get("/healthcare-access/latest",
+    response_model=List[HealthcareAccessResponse],
+    summary="Get latest healthcare access records",
+    description="Retrieve the most recently created healthcare access records"
+)
+def get_latest_healthcare_access(limit: int = 10, db: Session = Depends(get_postgres_session)):
+    try:
+        access_records = db.query(models.HealthcareAccess).order_by(models.HealthcareAccess.AccessID.desc()).limit(limit).all()
+        return access_records
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
