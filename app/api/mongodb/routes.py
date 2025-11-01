@@ -758,7 +758,7 @@ def get_healthcare_access_by_id(access_id: str):
         )
 
 
-@router.post("/healthcare-access/", 
+@router.post("/healthcare-access/",
     status_code=status.HTTP_201_CREATED,
     summary="Create a new healthcare access record",
     description="Create a new healthcare access record in MongoDB"
@@ -847,7 +847,7 @@ def get_all_latest_records(limit: int = 5):
         )
         
         # Convert ObjectIds to strings
-        for patient in latest_pat  ients:
+        for patient in latest_patients:
             patient["_id"] = str(patient["_id"])
         for condition in latest_conditions:
             condition["_id"] = str(condition["_id"])
