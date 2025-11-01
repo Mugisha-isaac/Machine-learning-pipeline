@@ -97,17 +97,17 @@ def verify_connections():
     try:
         with engine.connect() as conn:
             conn.execute(text("SELECT 1"))
-        print("✓ PostgreSQL connection successful")
+        print("PostgreSQL connection successful")
     except Exception as e:
-        print(f"✗ PostgreSQL connection failed: {e}")
+        print(f"PostgreSQL connection failed: {e}")
         raise
     
     # Test MongoDB connection
     try:
         mongo_client.server_info()
-        print("✓ MongoDB connection successful")
+        print("MongoDB connection successful")
     except Exception as e:
-        print(f"✗ MongoDB connection failed: {e}")
+        print(f"MongoDB connection failed: {e}")
         raise
 
 
