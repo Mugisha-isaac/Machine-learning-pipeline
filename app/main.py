@@ -16,6 +16,7 @@ from app.core import (
     MLModel,
     COLLECTIONS,
 )
+from app.api.routes import postgres_routes, mongo_routes
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -24,6 +25,9 @@ app = FastAPI(
     description="Machine Learning Pipeline API for Healthcare Data",
 )
 
+# Include routers
+app.include_router(postgres_routes.router)
+app.include_router(mongo_routes.router)
 
 @app.on_event("startup")
 async def startup_event():
@@ -52,7 +56,4 @@ async def health_check():
         return {"status": "healthy", "databases": ["postgresql", "mongodb"]}
     except Exception as e:
         return {"status": "unhealthy", "error": str(e)}
-
-
-
 
