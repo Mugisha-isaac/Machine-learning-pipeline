@@ -107,6 +107,42 @@ class HealthcareAccessResponse(BaseModel):
 
 # ==================== PATIENT ENDPOINTS ====================
 
+@router.get("/patients/",
+    response_model=List[PatientResponse],
+    summary="Get all patients",
+    description="Retrieve all patient records with optional pagination"
+)
+def get_all_patients(skip: int = 0, limit: int = 100, db: Session = Depends(get_postgres_session)):
+    try:
+        patients = db.query(models.Patient).offset(skip).limit(limit).all()
+        return patients
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get("/patients/{patient_id}",
+    response_model=PatientResponse,
+    summary="Get patient by ID",
+    description="Retrieve a single patient record by ID"
+)
+def get_patient_by_id(patient_id: int, db: Session = Depends(get_postgres_session)):
+    try:
+        patient = db.query(models.Patient).filter(models.Patient.PatientID == patient_id).first()
+        if not patient:
+            raise HTTPException(status_code=404, detail="Patient not found")
+        return patient
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
 @router.post("/patients/",
     response_model=PatientResponse,
     status_code=status.HTTP_201_CREATED,
@@ -150,6 +186,58 @@ def delete_patient(patient_id: int, db: Session = Depends(get_postgres_session))
     return {"message": "Patient deleted successfully"}
 
 # ==================== HEALTH CONDITION ENDPOINTS ====================
+
+@router.get("/health-conditions/",
+    response_model=List[HealthConditionResponse],
+    summary="Get all health conditions",
+    description="Retrieve all health condition records with optional pagination"
+)
+def get_all_health_conditions(skip: int = 0, limit: int = 100, db: Session = Depends(get_postgres_session)):
+    try:
+        conditions = db.query(models.HealthCondition).offset(skip).limit(limit).all()
+        return conditions
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get("/health-conditions/{condition_id}",
+    response_model=HealthConditionResponse,
+    summary="Get health condition by ID",
+    description="Retrieve a single health condition record by ID"
+)
+def get_health_condition_by_id(condition_id: int, db: Session = Depends(get_postgres_session)):
+    try:
+        condition = db.query(models.HealthCondition).filter(models.HealthCondition.ConditionID == condition_id).first()
+        if not condition:
+            raise HTTPException(status_code=404, detail="Health condition not found")
+        return condition
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get("/health-conditions/patient/{patient_id}",
+    response_model=List[HealthConditionResponse],
+    summary="Get health conditions by PatientID",
+    description="Retrieve all health conditions for a specific patient"
+)
+def get_health_conditions_by_patient(patient_id: int, db: Session = Depends(get_postgres_session)):
+    try:
+        conditions = db.query(models.HealthCondition).filter(models.HealthCondition.PatientID == patient_id).all()
+        return conditions
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
 
 @router.post("/health-conditions/",
     response_model=HealthConditionResponse,
@@ -195,6 +283,58 @@ def delete_health_condition(condition_id: int, db: Session = Depends(get_postgre
 
 # ==================== LIFESTYLE FACTOR ENDPOINTS ====================
 
+@router.get("/lifestyle-factors/",
+    response_model=List[LifestyleFactorResponse],
+    summary="Get all lifestyle factors",
+    description="Retrieve all lifestyle factor records with optional pagination"
+)
+def get_all_lifestyle_factors(skip: int = 0, limit: int = 100, db: Session = Depends(get_postgres_session)):
+    try:
+        lifestyle_factors = db.query(models.LifestyleFactor).offset(skip).limit(limit).all()
+        return lifestyle_factors
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get("/lifestyle-factors/{lifestyle_id}",
+    response_model=LifestyleFactorResponse,
+    summary="Get lifestyle factor by ID",
+    description="Retrieve a single lifestyle factor record by ID"
+)
+def get_lifestyle_factor_by_id(lifestyle_id: int, db: Session = Depends(get_postgres_session)):
+    try:
+        lifestyle = db.query(models.LifestyleFactor).filter(models.LifestyleFactor.LifestyleID == lifestyle_id).first()
+        if not lifestyle:
+            raise HTTPException(status_code=404, detail="Lifestyle factor not found")
+        return lifestyle
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get("/lifestyle-factors/patient/{patient_id}",
+    response_model=List[LifestyleFactorResponse],
+    summary="Get lifestyle factors by PatientID",
+    description="Retrieve all lifestyle factors for a specific patient"
+)
+def get_lifestyle_factors_by_patient(patient_id: int, db: Session = Depends(get_postgres_session)):
+    try:
+        lifestyle_factors = db.query(models.LifestyleFactor).filter(models.LifestyleFactor.PatientID == patient_id).all()
+        return lifestyle_factors
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
 @router.post("/lifestyle-factors/",
     response_model=LifestyleFactorResponse,
     status_code=status.HTTP_201_CREATED,
@@ -239,6 +379,58 @@ def delete_lifestyle_factor(lifestyle_id: int, db: Session = Depends(get_postgre
 
 # ==================== HEALTH METRIC ENDPOINTS ====================
 
+@router.get("/health-metrics/",
+    response_model=List[HealthMetricResponse],
+    summary="Get all health metrics",
+    description="Retrieve all health metric records with optional pagination"
+)
+def get_all_health_metrics(skip: int = 0, limit: int = 100, db: Session = Depends(get_postgres_session)):
+    try:
+        metrics = db.query(models.HealthMetric).offset(skip).limit(limit).all()
+        return metrics
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get("/health-metrics/{metric_id}",
+    response_model=HealthMetricResponse,
+    summary="Get health metric by ID",
+    description="Retrieve a single health metric record by ID"
+)
+def get_health_metric_by_id(metric_id: int, db: Session = Depends(get_postgres_session)):
+    try:
+        metric = db.query(models.HealthMetric).filter(models.HealthMetric.MetricsID == metric_id).first()
+        if not metric:
+            raise HTTPException(status_code=404, detail="Health metric not found")
+        return metric
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get("/health-metrics/patient/{patient_id}",
+    response_model=List[HealthMetricResponse],
+    summary="Get health metrics by PatientID",
+    description="Retrieve all health metrics for a specific patient"
+)
+def get_health_metrics_by_patient(patient_id: int, db: Session = Depends(get_postgres_session)):
+    try:
+        metrics = db.query(models.HealthMetric).filter(models.HealthMetric.PatientID == patient_id).all()
+        return metrics
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
 @router.post("/health-metrics/",
     response_model=HealthMetricResponse,
     status_code=status.HTTP_201_CREATED,
@@ -282,6 +474,58 @@ def delete_health_metric(metric_id: int, db: Session = Depends(get_postgres_sess
     return {"message": "Health metric deleted successfully"}
 
 # ==================== HEALTHCARE ACCESS ENDPOINTS ====================
+
+@router.get("/healthcare-access/",
+    response_model=List[HealthcareAccessResponse],
+    summary="Get all healthcare access records",
+    description="Retrieve all healthcare access records with optional pagination"
+)
+def get_all_healthcare_access(skip: int = 0, limit: int = 100, db: Session = Depends(get_postgres_session)):
+    try:
+        access_records = db.query(models.HealthcareAccess).offset(skip).limit(limit).all()
+        return access_records
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get("/healthcare-access/{access_id}",
+    response_model=HealthcareAccessResponse,
+    summary="Get healthcare access by ID",
+    description="Retrieve a single healthcare access record by ID"
+)
+def get_healthcare_access_by_id(access_id: int, db: Session = Depends(get_postgres_session)):
+    try:
+        access = db.query(models.HealthcareAccess).filter(models.HealthcareAccess.AccessID == access_id).first()
+        if not access:
+            raise HTTPException(status_code=404, detail="Healthcare access record not found")
+        return access
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get("/healthcare-access/patient/{patient_id}",
+    response_model=List[HealthcareAccessResponse],
+    summary="Get healthcare access by PatientID",
+    description="Retrieve all healthcare access records for a specific patient"
+)
+def get_healthcare_access_by_patient(patient_id: int, db: Session = Depends(get_postgres_session)):
+    try:
+        access_records = db.query(models.HealthcareAccess).filter(models.HealthcareAccess.PatientID == patient_id).all()
+        return access_records
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
 
 @router.post("/healthcare-access/",
     response_model=HealthcareAccessResponse,
