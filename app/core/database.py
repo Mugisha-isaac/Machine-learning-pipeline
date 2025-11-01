@@ -2,7 +2,7 @@
 Database connection and session management for PostgreSQL and MongoDB.
 """
 from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker, declarative_base, Session
+from sqlalchemy.orm import sessionmaker, Session, DeclarativeBase
 from pymongo import MongoClient
 from pymongo.database import Database
 from typing import Generator
@@ -10,8 +10,27 @@ from contextlib import contextmanager
 
 from app.core.config import settings
 
+
+# Base class for SQLAlchemy models (SQLAlchemy 2.0 style)
+class Base(DeclarativeBase):
+    pass
+
+
 # PostgreSQL setup
-SQLALCHEMY_DATABASE_URL = settings.get_postgres_url()
+def get_postgres_url() -> str:
+    """Get PostgreSQL connection URL."""
+    if settings.POSTGRES_URL:
+        return settings.POSTGRES_URL
+    
+    # Build URL from components
+    if all([settings.POSTGRES_USER, settings.POSTGRES_PASSWORD, settings.POSTGRES_HOST, settings.POSTGRES_DB]):
+        port = f":{settings.POSTGRES_PORT}" if settings.POSTGRES_PORT else ":5432"
+        return f"postgresql://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@{settings.POSTGRES_HOST}{port}/{settings.POSTGRES_DB}"
+    
+    raise ValueError("PostgreSQL connection URL or components must be provided in .env file")
+
+
+SQLALCHEMY_DATABASE_URL = get_postgres_url()
 
 # Create engine with connection pooling
 engine = create_engine(
@@ -29,9 +48,6 @@ SessionLocal = sessionmaker(
     autocommit=False,
     expire_on_commit=False
 )
-
-# Base class for SQLAlchemy models
-Base = declarative_base()
 
 
 # Dependency for FastAPI

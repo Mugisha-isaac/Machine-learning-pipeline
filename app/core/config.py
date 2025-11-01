@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Optional
 
 
@@ -12,16 +12,18 @@ class Settings(BaseSettings):
     POSTGRES_PORT: Optional[str] = None
     
     # MongoDB - supports full URL or individual components
-    MONGO_URI: str
+    MONGO_URI: str = "mongodb://localhost:27017"
     MONGO_DB: str = "healthcare_ml"
     
     # API Settings
     API_V1_PREFIX: str = "/api/v1"
     PROJECT_NAME: str = "Machine Learning Pipeline"
     
-    class Config:
-        env_file = ".env"
-        case_sensitive = True
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        case_sensitive=True,
+        extra="ignore"
+    )
 
     def get_postgres_url(self) -> str:
         """Get PostgreSQL connection URL, preferring POSTGRES_URL if provided."""

@@ -1,18 +1,14 @@
 """
-Core module exports for easy imports in API development.
+Core module exports for easy importing.
 """
+from app.core.config import settings
 from app.core.database import (
     get_postgres_session,
-    get_postgres_session_context,
     get_mongo_db,
     verify_connections,
-    engine,
-    SessionLocal,
     Base,
-    mongo_db,
-    mongo_client,
+    engine,
 )
-from app.core.config import settings
 from app.core.models import (
     Patient,
     HealthCondition,
@@ -21,39 +17,30 @@ from app.core.models import (
     HealthcareAccess,
 )
 from app.core.mongo_models import (
+    COLLECTIONS,
     Patient as MongoPatient,
     HealthCondition as MongoHealthCondition,
     LifestyleFactor as MongoLifestyleFactor,
     HealthMetric as MongoHealthMetric,
     HealthcareAccess as MongoHealthcareAccess,
-    COLLECTIONS,
 )
 
 __all__ = [
-    # Database
+    "settings",
     "get_postgres_session",
-    "get_postgres_session_context",
     "get_mongo_db",
     "verify_connections",
-    "engine",
-    "SessionLocal",
     "Base",
-    "mongo_db",
-    "mongo_client",
-    # Config
-    "settings",
-    # PostgreSQL Models
+    "engine",
     "Patient",
     "HealthCondition",
     "LifestyleFactor",
     "HealthMetric",
     "HealthcareAccess",
-    # MongoDB Models
+    "COLLECTIONS",
     "MongoPatient",
     "MongoHealthCondition",
     "MongoLifestyleFactor",
     "MongoHealthMetric",
     "MongoHealthcareAccess",
-    "COLLECTIONS",
 ]
-
