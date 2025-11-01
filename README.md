@@ -24,10 +24,10 @@ Create a `.env` file in the root directory:
 
 ```env
 # PostgreSQL Configuration
-POSTGRES_URL=postgresql://neondb_owner:npg_Qsbx5p1PtKdE@ep-icy-queen-adcehdzl-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+POSTGRES_URL=postgresql://neondb_owner:**********@ep-icy-queen-adcehdzl-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
 
 # MongoDB Configuration
-MONGO_URI=mongodb+srv://machine-learning:MweLmOxNyP3XMSsq@cluster0.5zu3lle.mongodb.net/?appName=Cluster0
+MONGO_URI=mongodb+srv://******:****@cluster0.5zu3lle.mongodb.net/?appName=Cluster0
 MONGO_DB=healthcare_ml
 
 # API Configuration
