@@ -1,18 +1,116 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+"""
+Database connection and session management for PostgreSQL and MongoDB.
+"""
+from sqlalchemy import create_engine, text
+from sqlalchemy.orm import sessionmaker, declarative_base, Session
 from pymongo import MongoClient
+from pymongo.database import Database
+from typing import Generator
+from contextlib import contextmanager
+
 from app.core.config import settings
 
 # PostgreSQL setup
-SQLALCHEMY_DATABASE_URL = (
-    f"postgresql://{settings.POSTGRES_USER}:{settings.POSTGRES_PASSWORD}@"
-    f"{settings.POSTGRES_HOST}:{settings.POSTGRES_PORT}/{settings.POSTGRES_DB}"
+SQLALCHEMY_DATABASE_URL = settings.get_postgres_url()
+
+# Create engine with connection pooling
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    pool_pre_ping=True,  # Verify connections before using
+    echo=False,  # Set to True for SQL query logging
+    pool_size=5,
+    max_overflow=10,
 )
 
-engine = create_engine(SQLALCHEMY_DATABASE_URL)
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
+# Session factory
+SessionLocal = sessionmaker(
+    bind=engine,
+    autoflush=False,
+    autocommit=False,
+    expire_on_commit=False
+)
+
+# Base class for SQLAlchemy models
 Base = declarative_base()
 
+
+# Dependency for FastAPI
+def get_postgres_session() -> Generator[Session, None, None]:
+    """
+    FastAPI dependency for PostgreSQL database sessions.
+    Usage: 
+        @app.get("/items")
+        def read_items(db: Session = Depends(get_postgres_session)):
+            ...
+    """
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+@contextmanager
+def get_postgres_session_context():
+    """
+    Context manager for PostgreSQL sessions (for use outside FastAPI).
+    Usage:
+        with get_postgres_session_context() as db:
+            db.query(Patient).all()
+    """
+    db = SessionLocal()
+    try:
+        yield db
+        db.commit()
+    except Exception:
+        db.rollback()
+        raise
+    finally:
+        db.close()
+
+
 # MongoDB setup
-mongo_client = MongoClient(settings.MONGO_URI)
-mongo_db = mongo_client[settings.MONGO_DB]
+mongo_client: MongoClient = MongoClient(
+    settings.MONGO_URI,
+    serverSelectionTimeoutMS=5000,  # Timeout for connection
+    connectTimeoutMS=5000,
+    socketTimeoutMS=5000,
+)
+
+# Get MongoDB database
+mongo_db: Database = mongo_client[settings.MONGO_DB]
+
+
+def get_mongo_db() -> Database:
+    """
+    Get MongoDB database instance.
+    Usage in FastAPI:
+        db = get_mongo_db()
+        collection = db["ml_models"]
+    """
+    return mongo_db
+
+
+def verify_connections():
+    """Verify both database connections are working."""
+    # Test PostgreSQL connection
+    try:
+        with engine.connect() as conn:
+            conn.execute(text("SELECT 1"))
+        print("✓ PostgreSQL connection successful")
+    except Exception as e:
+        print(f"✗ PostgreSQL connection failed: {e}")
+        raise
+    
+    # Test MongoDB connection
+    try:
+        mongo_client.server_info()
+        print("✓ MongoDB connection successful")
+    except Exception as e:
+        print(f"✗ MongoDB connection failed: {e}")
+        raise
+
+
+# Initialize tables on startup (optional - uncomment if needed)
+# from app.core.models import *
+# Base.metadata.create_all(bind=engine)
