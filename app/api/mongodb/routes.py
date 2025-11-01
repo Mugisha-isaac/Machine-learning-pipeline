@@ -39,20 +39,28 @@ def get_all_patients(skip: int = 0, limit: int = 100):
         )
 
 
-@router.get("/patients/{patient_id}",
-    summary="Get patient by ID",
-    description="Retrieve a single patient record by ID"
+@router.get("/patients/latest",
+    summary="Get latest patients",
+    description="Retrieve the most recently created or updated patient records"
 )
-def get_patient_by_id(patient_id: str):
+def get_latest_patients(limit: int = 10):
     try:
         db = get_mongo_db()
-        patient = db[COLLECTIONS["patients"]].find_one({"_id": ObjectId(patient_id)})
+        patients = list(
+            db[COLLECTIONS["patients"]]
+            .find()
+            .sort("updated_at", -1)
+            .limit(limit)
+        )
         
-        if not patient:
-            raise HTTPException(status_code=404, detail="Patient not found")
+        for patient in patients:
+            patient["_id"] = str(patient["_id"])
         
-        patient["_id"] = str(patient["_id"])
-        return patient
+        return {
+            "limit": limit,
+            "count": len(patients),
+            "patients": patients
+        }
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -68,6 +76,27 @@ def get_patient_by_patient_id(patient_id: int):
     try:
         db = get_mongo_db()
         patient = db[COLLECTIONS["patients"]].find_one({"PatientID": patient_id})
+        
+        if not patient:
+            raise HTTPException(status_code=404, detail="Patient not found")
+        
+        patient["_id"] = str(patient["_id"])
+        return patient
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get("/patients/{patient_id}",
+    summary="Get patient by ID",
+    description="Retrieve a single patient record by ID"
+)
+def get_patient_by_id(patient_id: str):
+    try:
+        db = get_mongo_db()
+        patient = db[COLLECTIONS["patients"]].find_one({"_id": ObjectId(patient_id)})
         
         if not patient:
             raise HTTPException(status_code=404, detail="Patient not found")
@@ -169,20 +198,28 @@ def get_all_health_conditions(skip: int = 0, limit: int = 100):
         )
 
 
-@router.get("/health-conditions/{condition_id}",
-    summary="Get health condition by ID",
-    description="Retrieve a single health condition record by ID"
+@router.get("/health-conditions/latest",
+    summary="Get latest health conditions",
+    description="Retrieve the most recently created or updated health condition records"
 )
-def get_health_condition_by_id(condition_id: str):
+def get_latest_health_conditions(limit: int = 10):
     try:
         db = get_mongo_db()
-        condition = db[COLLECTIONS["health_conditions"]].find_one({"_id": ObjectId(condition_id)})
+        conditions = list(
+            db[COLLECTIONS["health_conditions"]]
+            .find()
+            .sort("updated_at", -1)
+            .limit(limit)
+        )
         
-        if not condition:
-            raise HTTPException(status_code=404, detail="Health condition not found")
+        for condition in conditions:
+            condition["_id"] = str(condition["_id"])
         
-        condition["_id"] = str(condition["_id"])
-        return condition
+        return {
+            "limit": limit,
+            "count": len(conditions),
+            "health_conditions": conditions
+        }
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -207,6 +244,27 @@ def get_health_conditions_by_patient(patient_id: int):
             "total": len(conditions),
             "health_conditions": conditions
         }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get("/health-conditions/{condition_id}",
+    summary="Get health condition by ID",
+    description="Retrieve a single health condition record by ID"
+)
+def get_health_condition_by_id(condition_id: str):
+    try:
+        db = get_mongo_db()
+        condition = db[COLLECTIONS["health_conditions"]].find_one({"_id": ObjectId(condition_id)})
+        
+        if not condition:
+            raise HTTPException(status_code=404, detail="Health condition not found")
+        
+        condition["_id"] = str(condition["_id"])
+        return condition
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -302,20 +360,28 @@ def get_all_lifestyle_factors(skip: int = 0, limit: int = 100):
         )
 
 
-@router.get("/lifestyle-factors/{lifestyle_id}",
-    summary="Get lifestyle factor by ID",
-    description="Retrieve a single lifestyle factor record by ID"
+@router.get("/lifestyle-factors/latest",
+    summary="Get latest lifestyle factors",
+    description="Retrieve the most recently created or updated lifestyle factor records"
 )
-def get_lifestyle_factor_by_id(lifestyle_id: str):
+def get_latest_lifestyle_factors(limit: int = 10):
     try:
         db = get_mongo_db()
-        lifestyle = db[COLLECTIONS["lifestyle_factors"]].find_one({"_id": ObjectId(lifestyle_id)})
+        lifestyle_factors = list(
+            db[COLLECTIONS["lifestyle_factors"]]
+            .find()
+            .sort("updated_at", -1)
+            .limit(limit)
+        )
         
-        if not lifestyle:
-            raise HTTPException(status_code=404, detail="Lifestyle factor not found")
+        for lifestyle in lifestyle_factors:
+            lifestyle["_id"] = str(lifestyle["_id"])
         
-        lifestyle["_id"] = str(lifestyle["_id"])
-        return lifestyle
+        return {
+            "limit": limit,
+            "count": len(lifestyle_factors),
+            "lifestyle_factors": lifestyle_factors
+        }
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -340,6 +406,27 @@ def get_lifestyle_factors_by_patient(patient_id: int):
             "total": len(lifestyle_factors),
             "lifestyle_factors": lifestyle_factors
         }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get("/lifestyle-factors/{lifestyle_id}",
+    summary="Get lifestyle factor by ID",
+    description="Retrieve a single lifestyle factor record by ID"
+)
+def get_lifestyle_factor_by_id(lifestyle_id: str):
+    try:
+        db = get_mongo_db()
+        lifestyle = db[COLLECTIONS["lifestyle_factors"]].find_one({"_id": ObjectId(lifestyle_id)})
+        
+        if not lifestyle:
+            raise HTTPException(status_code=404, detail="Lifestyle factor not found")
+        
+        lifestyle["_id"] = str(lifestyle["_id"])
+        return lifestyle
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -435,20 +522,28 @@ def get_all_health_metrics(skip: int = 0, limit: int = 100):
         )
 
 
-@router.get("/health-metrics/{metric_id}",
-    summary="Get health metric by ID",
-    description="Retrieve a single health metric record by ID"
+@router.get("/health-metrics/latest",
+    summary="Get latest health metrics",
+    description="Retrieve the most recently created or updated health metric records"
 )
-def get_health_metric_by_id(metric_id: str):
+def get_latest_health_metrics(limit: int = 10):
     try:
         db = get_mongo_db()
-        metric = db[COLLECTIONS["health_metrics"]].find_one({"_id": ObjectId(metric_id)})
+        metrics = list(
+            db[COLLECTIONS["health_metrics"]]
+            .find()
+            .sort("updated_at", -1)
+            .limit(limit)
+        )
         
-        if not metric:
-            raise HTTPException(status_code=404, detail="Health metric not found")
+        for metric in metrics:
+            metric["_id"] = str(metric["_id"])
         
-        metric["_id"] = str(metric["_id"])
-        return metric
+        return {
+            "limit": limit,
+            "count": len(metrics),
+            "health_metrics": metrics
+        }
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -473,6 +568,27 @@ def get_health_metrics_by_patient(patient_id: int):
             "total": len(metrics),
             "health_metrics": metrics
         }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get("/health-metrics/{metric_id}",
+    summary="Get health metric by ID",
+    description="Retrieve a single health metric record by ID"
+)
+def get_health_metric_by_id(metric_id: str):
+    try:
+        db = get_mongo_db()
+        metric = db[COLLECTIONS["health_metrics"]].find_one({"_id": ObjectId(metric_id)})
+        
+        if not metric:
+            raise HTTPException(status_code=404, detail="Health metric not found")
+        
+        metric["_id"] = str(metric["_id"])
+        return metric
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -568,20 +684,28 @@ def get_all_healthcare_access(skip: int = 0, limit: int = 100):
         )
 
 
-@router.get("/healthcare-access/{access_id}",
-    summary="Get healthcare access by ID",
-    description="Retrieve a single healthcare access record by ID"
+@router.get("/healthcare-access/latest",
+    summary="Get latest healthcare access records",
+    description="Retrieve the most recently created or updated healthcare access records"
 )
-def get_healthcare_access_by_id(access_id: str):
+def get_latest_healthcare_access(limit: int = 10):
     try:
         db = get_mongo_db()
-        access = db[COLLECTIONS["healthcare_access"]].find_one({"_id": ObjectId(access_id)})
+        access_records = list(
+            db[COLLECTIONS["healthcare_access"]]
+            .find()
+            .sort("updated_at", -1)
+            .limit(limit)
+        )
         
-        if not access:
-            raise HTTPException(status_code=404, detail="Healthcare access record not found")
+        for access in access_records:
+            access["_id"] = str(access["_id"])
         
-        access["_id"] = str(access["_id"])
-        return access
+        return {
+            "limit": limit,
+            "count": len(access_records),
+            "healthcare_access": access_records
+        }
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -606,6 +730,27 @@ def get_healthcare_access_by_patient(patient_id: int):
             "total": len(access_records),
             "healthcare_access": access_records
         }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get("/healthcare-access/{access_id}",
+    summary="Get healthcare access by ID",
+    description="Retrieve a single healthcare access record by ID"
+)
+def get_healthcare_access_by_id(access_id: str):
+    try:
+        db = get_mongo_db()
+        access = db[COLLECTIONS["healthcare_access"]].find_one({"_id": ObjectId(access_id)})
+        
+        if not access:
+            raise HTTPException(status_code=404, detail="Healthcare access record not found")
+        
+        access["_id"] = str(access["_id"])
+        return access
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -668,6 +813,59 @@ def delete_healthcare_access(access_id: str):
         if result.deleted_count == 0:
             raise HTTPException(status_code=404, detail="Healthcare access record not found")
         return {"message": "Healthcare access record deleted successfully"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+# ==================== AGGREGATED LATEST RECORDS ENDPOINT ====================
+
+@router.get("/all/latest",
+    summary="Get latest records across all collections",
+    description="Retrieve the most recently updated records from all collections"
+)
+def get_all_latest_records(limit: int = 5):
+    try:
+        db = get_mongo_db()
+        
+        # Get latest from each collection
+        latest_patients = list(
+            db[COLLECTIONS["patients"]].find().sort("updated_at", -1).limit(limit)
+        )
+        latest_conditions = list(
+            db[COLLECTIONS["health_conditions"]].find().sort("updated_at", -1).limit(limit)
+        )
+        latest_lifestyle = list(
+            db[COLLECTIONS["lifestyle_factors"]].find().sort("updated_at", -1).limit(limit)
+        )
+        latest_metrics = list(
+            db[COLLECTIONS["health_metrics"]].find().sort("updated_at", -1).limit(limit)
+        )
+        latest_access = list(
+            db[COLLECTIONS["healthcare_access"]].find().sort("updated_at", -1).limit(limit)
+        )
+        
+        # Convert ObjectIds to strings
+        for patient in latest_pat  ients:
+            patient["_id"] = str(patient["_id"])
+        for condition in latest_conditions:
+            condition["_id"] = str(condition["_id"])
+        for lifestyle in latest_lifestyle:
+            lifestyle["_id"] = str(lifestyle["_id"])
+        for metric in latest_metrics:
+            metric["_id"] = str(metric["_id"])
+        for access in latest_access:
+            access["_id"] = str(access["_id"])
+        
+        return {
+            "limit_per_collection": limit,
+            "latest_patients": latest_patients,
+            "latest_health_conditions": latest_conditions,
+            "latest_lifestyle_factors": latest_lifestyle,
+            "latest_health_metrics": latest_metrics,
+            "latest_healthcare_access": latest_access
+        }
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
