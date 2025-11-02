@@ -1,160 +1,278 @@
-# Machine Learning Pipeline
+# Machine Learning Pipeline API
 
-A healthcare machine learning pipeline API with PostgreSQL and MongoDB support.
+A comprehensive healthcare data management system with dual-database architecture, built with FastAPI for high-performance API operations.
 
-## Features
+## Overview
 
-- **PostgreSQL**: Structured healthcare data storage (patients, conditions, metrics, etc.)
-- **MongoDB**: ML models, predictions, training jobs, and analytics storage
-- **FastAPI**: Modern, fast API framework
-- **SQLAlchemy**: ORM for PostgreSQL
-- **Pydantic**: Data validation and settings management
+This project provides a robust RESTful API for managing healthcare data across two specialized databases:
+- **PostgreSQL** for structured, relational healthcare records
+- **MongoDB** for flexible, document-based ML training data and analytics
 
-## Setup
+The API enables seamless CRUD operations, data aggregation, and machine learning model training data preparation.
 
-### 1. Install Dependencies
+## Key Features
+
+### Dual Database Architecture
+- **PostgreSQL**: Optimized for structured healthcare data with strict schema validation
+- **MongoDB**: Flexible document storage for ML workflows and training datasets
+- Seamless integration between both databases
+- Independent scaling and optimization strategies
+
+### Comprehensive API Endpoints
+- Patient demographic management
+- Health conditions tracking
+- Lifestyle factors monitoring
+- Health metrics recording
+- Healthcare access information
+- ML training data aggregation
+
+### Modern Technology Stack
+- **FastAPI**: High-performance async API framework
+- **SQLAlchemy**: Powerful ORM for PostgreSQL operations
+- **Pydantic**: Data validation and serialization
+- **PyMongo**: MongoDB driver for document operations
+- **Uvicorn**: Lightning-fast ASGI server
+
+### Developer-Friendly Features
+- Auto-generated OpenAPI documentation (Swagger UI)
+- Modular controller architecture
+- Type hints and data validation
+- CORS support for frontend integration
+- Health check endpoints
+- Comprehensive error handling
+
+## Prerequisites
+
+- Python 3.8 or higher
+- PostgreSQL database (cloud or local)
+- MongoDB database (cloud or local)
+- pip package manager
+
+## Quick Start
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/Mugisha-isaac/Machine-learning-pipeline.git
+cd Machine-learning-pipeline
+```
+
+### 2. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Environment Configuration
+### 3. Environment Configuration
 
-Create a `.env` file in the root directory:
+Create a `.env` file in the root directory with your database credentials:
 
 ```env
 # PostgreSQL Configuration
-POSTGRES_URL=postgresql://neondb_owner:**********@ep-icy-queen-adcehdzl-pooler.c-2.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+POSTGRES_URL=your_postgresql_connection_string
 
 # MongoDB Configuration
-MONGO_URI=mongodb+srv://******:****@cluster0.5zu3lle.mongodb.net/?appName=Cluster0
-MONGO_DB=healthcare_ml
+MONGO_URI=your_mongodb_connection_string
+MONGO_DB=your_database_name
 
 # API Configuration
 API_V1_PREFIX=/api/v1
 PROJECT_NAME=Machine Learning Pipeline
 ```
 
-### 3. Database Setup
+**Note**: Never commit your `.env` file to version control. Use `.env.example` as a template.
 
-The PostgreSQL schema is defined in `dbdesign.sql`. You can run it against your database:
+### 4. Database Schema Setup
+
+Initialize the PostgreSQL database using the provided schema:
 
 ```bash
-psql $POSTGRES_URL -f dbdesign.sql
+psql your_postgres_url -f dbdesign.sql
 ```
+
+### 5. Start the Application
+
+```bash
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+The API will be available at:
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
+- **Health Check**: http://localhost:8000/health
 
 ## Project Structure
 
 ```
-app/
-├── api/              # API endpoints (to be implemented)
-├── core/             # Core configuration and database
-│   ├── config.py     # Settings and configuration
-│   ├── database.py   # Database connections and sessions
-│   ├── models.py     # PostgreSQL SQLAlchemy models
-│   ├── mongo_models.py  # MongoDB Pydantic schemas
-│   └── db_utils.py   # Database utility functions
-└── ...
-```
-
-## Usage
-
-### PostgreSQL (Structured Data)
-
-The core module provides easy-to-use imports:
-
-```python
-from app.core import (
-    get_postgres_session,
-    Patient,
-    HealthCondition,
-    LifestyleFactor,
-    HealthMetric,
-    HealthcareAccess
-)
-
-# In FastAPI routes
-from fastapi import Depends
-from sqlalchemy.orm import Session
-
-@app.get("/patients")
-def get_patients(db: Session = Depends(get_postgres_session)):
-    return db.query(Patient).all()
-
-# Outside FastAPI (using context manager)
-from app.core import get_postgres_session_context
-
-with get_postgres_session_context() as db:
-    patients = db.query(Patient).all()
-```
-
-### MongoDB (ML Data)
-
-```python
-from app.core import (
-    get_mongo_db,
-    MLModel,
-    Prediction,
-    TrainingJob,
-    COLLECTIONS
-)
-
-# Get MongoDB database
-db = get_mongo_db()
-
-# Access collections
-models_collection = db[COLLECTIONS["ml_models"]]
-predictions_collection = db[COLLECTIONS["predictions"]]
-
-# Insert a model
-model = MLModel(
-    model_name="diabetes_predictor",
-    model_type="classification",
-    algorithm="random_forest",
-    features=["Age", "BMI", "HighBP"],
-    target="Diabetes_012"
-)
-model_dict = model.dict(by_alias=True)
-models_collection.insert_one(model_dict)
+Machine-learning-pipeline/
+├── app/
+│   ├── api/
+│   │   ├── mongodb/          # MongoDB API controllers
+│   │   │   ├── patients.py
+│   │   │   ├── health_conditions.py
+│   │   │   ├── lifestyle_factors.py
+│   │   │   ├── health_metrics.py
+│   │   │   ├── healthcare_access.py
+│   │   │   ├── training_data.py
+│   │   │   └── routes.py     # MongoDB router aggregator
+│   │   └── postgres/         # PostgreSQL API controllers
+│   │       ├── patients.py
+│   │       ├── health_conditions.py
+│   │       ├── lifestyle_factors.py
+│   │       ├── health_metrics.py
+│   │       ├── healthcare_access.py
+│   │       ├── training_data.py
+│   │       ├── schemas.py    # Pydantic models
+│   │       └── routes.py     # PostgreSQL router aggregator
+│   ├── core/
+│   │   ├── config.py         # Application settings
+│   │   ├── database.py       # Database connections
+│   │   ├── models.py         # SQLAlchemy models
+│   │   └── mongo_models.py   # MongoDB Pydantic schemas
+│   └── main.py               # FastAPI application entry point
+├── dbdesign.sql              # PostgreSQL schema definition
+├── requirements.txt          # Python dependencies
+└── README.md
 ```
 
 ## Database Schema
 
 ### PostgreSQL Tables
 
-- **Patients**: Demographics (Sex, Age, Education, Income)
-- **Health_Conditions**: Medical conditions (Diabetes, HighBP, Stroke, etc.)
-- **Lifestyle_Factors**: Lifestyle metrics (BMI, Smoking, Physical Activity, etc.)
-- **Health_Metrics**: Health screenings and self-reported metrics
-- **Healthcare_Access**: Healthcare access information
+| Table | Description | Key Fields |
+|-------|-------------|------------|
+| **Patients** | Patient demographics | PatientID, Sex, Age, Education, Income |
+| **Health_Conditions** | Medical conditions | Diabetes, HighBP, HighChol, Stroke, HeartDiseaseorAttack |
+| **Lifestyle_Factors** | Lifestyle data | BMI, Smoker, PhysActivity, Fruits, Veggies |
+| **Health_Metrics** | Health screenings | CholCheck, GenHlth, MentHlth, PhysHlth |
+| **Healthcare_Access** | Access information | AnyHealthcare, NoDocbcCost |
 
 ### MongoDB Collections
 
-- **ml_models**: ML model metadata and configurations
-- **predictions**: Individual predictions made by models
-- **training_jobs**: Training job tracking and status
-- **analytics**: Analytics and insights from predictions
-- **feature_importance**: Feature importance analysis
+| Collection | Description | Purpose |
+|------------|-------------|---------|
+| **patients** | Patient documents | Flexible patient data storage |
+| **health_conditions** | Condition records | Health condition tracking |
+| **lifestyle_factors** | Lifestyle documents | Lifestyle data management |
+| **health_metrics** | Metrics records | Health metrics storage |
+| **healthcare_access** | Access documents | Healthcare access tracking |
+| **training_data** | Aggregated data | ML model training datasets |
+
+## API Documentation
+
+Once the application is running, comprehensive interactive API documentation is available:
+
+- **Swagger UI**: Navigate to `http://localhost:8000/docs` for interactive API testing
+- **ReDoc**: Navigate to `http://localhost:8000/redoc` for detailed API documentation
+
+Both interfaces provide:
+- Complete endpoint listings organized by category
+- Request/response schemas
+- Try-it-out functionality
+- Authentication details
+- Example payloads
+
+## Testing
+
+### Health Check
+Verify the application and database connections:
+
+```bash
+curl http://localhost:8000/health
+```
+
+Expected response:
+```json
+{
+  "status": "healthy",
+  "databases": ["postgresql", "mongodb"]
+}
+```
+
+### Endpoint Testing
+Use the Swagger UI at `/docs` for interactive testing of all endpoints.
 
 ## Development
 
-### Verify Connections
+### Code Organization
+- **Modular Controllers**: Separate files for each resource type
+- **Consistent Patterns**: Similar structure across MongoDB and PostgreSQL
+- **Type Safety**: Full type hints and Pydantic validation
+- **Error Handling**: Comprehensive exception handling
 
-```python
-from app.core import verify_connections
+### Adding New Endpoints
 
-verify_connections()  # Tests both PostgreSQL and MongoDB
-```
+1. Create controller file in appropriate directory (`mongodb/` or `postgres/`)
+2. Define router with appropriate tags
+3. Implement endpoint functions with proper schemas
+4. Add router to main `routes.py` aggregator
+5. Update tags metadata in `main.py`
 
-### Running the API
+## Security Considerations
 
-```bash
-uvicorn app.main:app --reload
-```
+- Store sensitive credentials in `.env` file (never commit)
+- Use environment-specific configuration
+- Implement proper authentication (recommended: JWT)
+- Enable HTTPS in production
+- Validate and sanitize all inputs
+- Use parameterized queries (SQLAlchemy ORM)
+- Implement rate limiting for production
 
-(Note: You'll need to create `app/main.py` with your FastAPI app)
+## Deployment
+
+### Production Checklist
+
+- [ ] Set `--reload` flag to `False`
+- [ ] Use production-grade ASGI server (Gunicorn + Uvicorn workers)
+- [ ] Configure proper logging
+- [ ] Set up monitoring and alerting
+- [ ] Enable HTTPS/SSL
+- [ ] Configure CORS appropriately
+- [ ] Use database connection pooling
+- [ ] Implement caching strategy
+- [ ] Set up automated backups
+
+### Docker Deployment (Optional)
+
+Consider containerizing the application for consistent deployments across environments.
+
+## Contributing
+
+Contributions are welcome! Please follow these guidelines:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes with clear commit messages
+4. Write/update tests as needed
+5. Submit a pull request
 
 ## License
 
-MIT
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Authors
+
+- **Yassin Hagenimana**
+- **Mugisha Isaac**
+- **Mitali Desnis**
+- **Tuyishime Jean Damour**
+
+## Acknowledgments
+
+- FastAPI for the excellent framework
+- SQLAlchemy for robust ORM capabilities
+- MongoDB team for flexible document storage
+- The open-source community
+
+## Support
+
+For issues, questions, or contributions:
+
+- Open an issue on GitHub
+- Check existing documentation
+- Review the API docs at `/docs`
+
+---
+
+**Note**: This is a healthcare data management system. Always ensure compliance with relevant healthcare data regulations (HIPAA, GDPR, etc.) when deploying to production.
 
