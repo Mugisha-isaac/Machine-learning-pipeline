@@ -2,6 +2,8 @@ import os
 import sys
 import warnings
 from pathlib import Path
+import json
+from datetime import datetime
 
 # Suppress TensorFlow verbose logs
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
@@ -11,6 +13,11 @@ import requests
 import numpy as np
 from tensorflow.keras.models import load_model
 import joblib
+import psycopg2
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
 # Configuration
 API_URL = os.getenv(
@@ -19,6 +26,10 @@ API_URL = os.getenv(
 )
 MODEL_PATH = Path(__file__).resolve().parents[1] / "models" / "model_exp5.h5"
 SCALER_PATH = Path(__file__).resolve().parents[1] / "models" / "scaler.joblib"
+MODEL_VERSION = "model_exp5"
+
+# Database connection string
+DB_URL = os.getenv("POSTGRES_URL")  # PostgreSQL connection URL from .env
 
 # Feature order expected by the model (must match training)
 FEATURE_ORDER = [
@@ -109,6 +120,67 @@ def interpret_prediction(value: float) -> (int, str):
     return cls, label
 
 
+def log_prediction_to_db(patient_id: int, raw_output: float, predicted_class: int, 
+                         predicted_label: str, feature_data: dict, model_version: str = MODEL_VERSION):
+    """
+    Log prediction results to the Predictions table in PostgreSQL.
+    
+    Args:
+        patient_id: ID of the patient
+        raw_output: Raw model output value
+        predicted_class: Predicted class (0, 1, or 2)
+        predicted_label: Human-readable label
+        feature_data: Dictionary of input features
+        model_version: Version of the model used
+    
+    Returns:
+        prediction_id: ID of the inserted prediction record, or None if failed
+    """
+    if not DB_URL:
+        print("⚠ Warning: POSTGRES_URL not set in environment. Skipping database logging.")
+        return None
+    
+    try:
+        # Connect to database
+        conn = psycopg2.connect(DB_URL)
+        cursor = conn.cursor()
+        
+        # Prepare feature snapshot as JSON
+        feature_snapshot = json.dumps(feature_data)
+        
+        # Insert prediction record
+        insert_query = """
+            INSERT INTO "Predictions" 
+            ("PatientID", "RawOutput", "PredictedClass", "PredictedLabel", 
+             "ModelVersion", "PredictedAt", "FeatureSnapshot")
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+            RETURNING "PredictionID"
+        """
+        
+        cursor.execute(insert_query, (
+            patient_id,
+            raw_output,
+            predicted_class,
+            predicted_label,
+            model_version,
+            datetime.utcnow(),
+            feature_snapshot
+        ))
+        
+        prediction_id = cursor.fetchone()[0]
+        
+        # Commit transaction
+        conn.commit()
+        cursor.close()
+        conn.close()
+        
+        return prediction_id
+    
+    except Exception as e:
+        print(f"⚠ Error logging prediction to database: {e}")
+        return None
+
+
 def main():
     print("\n=== Diabetes Prediction System ===\n")
 
@@ -163,6 +235,29 @@ def main():
     except Exception as e:
         print(f" Prediction failed: {e}")
         sys.exit(1)
+
+    # Log prediction to database
+    patient_id = record.get("PatientID")
+    if patient_id:
+        # Prepare feature data for logging
+        feature_data = {name: val for name, val in zip(FEATURE_ORDER, feature_vector.flatten().tolist())}
+        
+        print("Logging prediction to database...")
+        prediction_id = log_prediction_to_db(
+            patient_id=patient_id,
+            raw_output=raw_value,
+            predicted_class=cls,
+            predicted_label=label,
+            feature_data=feature_data,
+            model_version=MODEL_VERSION
+        )
+        
+        if prediction_id:
+            print(f"✓ Prediction logged successfully (PredictionID: {prediction_id})\n")
+        else:
+            print("⚠ Failed to log prediction to database\n")
+    else:
+        print("⚠ No PatientID found in record. Skipping database logging.\n")
 
 
 if __name__ == "__main__":

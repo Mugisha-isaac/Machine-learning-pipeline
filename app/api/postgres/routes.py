@@ -7,7 +7,8 @@ from app.api.postgres import (
     health_metrics,
     healthcare_access,
     training_data,
-    logs
+    logs,
+    predictions
 )
 
 router = APIRouter(
@@ -23,3 +24,4 @@ router.include_router(health_metrics.router, prefix="/health-metrics")
 router.include_router(healthcare_access.router, prefix="/healthcare-access")
 router.include_router(training_data.router, prefix="/training-data")
 router.include_router(logs.router, prefix="/logs")
+router.include_router(predictions.router, prefix="/predictions")
