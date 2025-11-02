@@ -373,6 +373,86 @@ python3 scripts/predict.py
 
 **Default API endpoint**: `https://machine-learning-pipeline.onrender.com/api/v1/postgres/training-data/latest`
 
+### Using the Prediction API (Recommended)
+
+The project now includes a comprehensive REST API for making predictions. This is the **recommended method** for production use.
+
+#### Key Features
+
+- ✅ Uses stored procedures (no external API calls)
+- ✅ Model loaded once for better performance
+- ✅ Supports single, latest, and batch predictions
+- ✅ Automatic database logging
+- ✅ RESTful interface for easy integration
+
+#### API Endpoints
+
+**Base URL**: `https://machine-learning-pipeline.onrender.com/api/v1/postgres/predictions`
+
+1. **POST** `/predict/patient/{patient_id}` - Predict for specific patient
+2. **POST** `/predict/latest` - Predict for latest patient
+3. **POST** `/predict/batch` - Batch predictions (up to 100 patients)
+4. **GET** `/predictions/` - Get all predictions (paginated)
+5. **GET** `/predictions/patient/{patient_id}` - Get patient prediction history
+
+#### Quick Examples
+
+**Predict for Patient ID 1:**
+```bash
+curl -X POST "https://machine-learning-pipeline.onrender.com/api/v1/postgres/predictions/predict/patient/1"
+```
+
+**Predict for Latest Patient:**
+```bash
+curl -X POST "https://machine-learning-pipeline.onrender.com/api/v1/postgres/predictions/predict/latest"
+```
+
+**Batch Predictions:**
+```bash
+curl -X POST "https://machine-learning-pipeline.onrender.com/api/v1/postgres/predictions/predict/batch" \
+  -H "Content-Type: application/json" \
+  -d '{"patient_ids": [1, 2, 3, 4, 5]}'
+```
+
+**Python Example:**
+```python
+import requests
+
+BASE_URL = "https://machine-learning-pipeline.onrender.com/api/v1/postgres/predictions"
+
+# Single prediction
+response = requests.post(f"{BASE_URL}/predict/patient/1")
+result = response.json()
+
+print(f"Prediction: {result['prediction']['predicted_label']}")
+print(f"Raw Output: {result['prediction']['raw_output']:.4f}")
+print(f"Logged as PredictionID: {result['prediction_id']}")
+```
+
+**Response Example:**
+```json
+{
+  "success": true,
+  "prediction_id": 15,
+  "patient_id": 1,
+  "prediction": {
+    "raw_output": 0.2183,
+    "predicted_class": 0,
+    "predicted_label": "No Diabetes",
+    "confidence": 0.2183
+  },
+  "model_version": "model_exp5",
+  "predicted_at": "2025-11-02T14:23:45.123456",
+  "features_used": { ... }
+}
+```
+
+#### Full Documentation
+
+For complete API documentation, examples, and integration guides, see:
+- **[PREDICTION_API_GUIDE.md](PREDICTION_API_GUIDE.md)** - Comprehensive API documentation
+- **Interactive Docs**: https://machine-learning-pipeline.onrender.com (Swagger UI)
+
 ## Development
 
 ### Connection Verification
