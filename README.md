@@ -55,11 +55,15 @@ psql $POSTGRES_URL -f dbdesign.sql
 
 ### 4. Run the Application
 
+**Production Deployment**: The API is deployed and accessible at:
+**https://machine-learning-pipeline.onrender.com**
+
+For local development:
 ```bash
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Access the API documentation at: **http://localhost:8000**
+Access the API documentation at: **https://machine-learning-pipeline.onrender.com** (production) or **http://localhost:8000** (local)
 
 ## Project Structure
 
@@ -163,7 +167,7 @@ Same structure as PostgreSQL endpoints, with MongoDB ObjectId strings for identi
 ### Creating a Patient (PostgreSQL)
 
 ```bash
-curl -X POST "http://localhost:8000/api/v1/postgres/patients/" \
+curl -X POST "https://machine-learning-pipeline.onrender.com/api/v1/postgres/patients/" \
   -H "Content-Type: application/json" \
   -d '{
     "Sex": true,
@@ -176,7 +180,7 @@ curl -X POST "http://localhost:8000/api/v1/postgres/patients/" \
 ### Updating a Patient
 
 ```bash
-curl -X PUT "http://localhost:8000/api/v1/postgres/patients/1" \
+curl -X PUT "https://machine-learning-pipeline.onrender.com/api/v1/postgres/patients/1" \
   -H "Content-Type: application/json" \
   -d '{
     "Age": 46,
@@ -187,7 +191,7 @@ curl -X PUT "http://localhost:8000/api/v1/postgres/patients/1" \
 ### Deleting a Patient
 
 ```bash
-curl -X DELETE "http://localhost:8000/api/v1/postgres/patients/1"
+curl -X DELETE "https://machine-learning-pipeline.onrender.com/api/v1/postgres/patients/1"
 ```
 
 ### Using Python Requests
@@ -195,9 +199,12 @@ curl -X DELETE "http://localhost:8000/api/v1/postgres/patients/1"
 ```python
 import requests
 
+# Base URL for the API
+API_BASE_URL = "https://machine-learning-pipeline.onrender.com/api/v1"
+
 # Create a patient
 response = requests.post(
-    "http://localhost:8000/api/v1/postgres/patients/",
+    f"{API_BASE_URL}/postgres/patients/",
     json={
         "Sex": False,
         "Age": 32,
@@ -210,7 +217,7 @@ print(f"Created patient with ID: {patient['PatientID']}")
 
 # Update the patient
 requests.put(
-    f"http://localhost:8000/api/v1/postgres/patients/{patient['PatientID']}",
+    f"{API_BASE_URL}/postgres/patients/{patient['PatientID']}",
     json={"Age": 33}
 )
 ```
@@ -357,14 +364,14 @@ Predicted class: 0 -> No Diabetes
 The script uses environment variables for configuration:
 
 ```bash
-# Set custom API endpoint
-export TRAINING_EXAMPLE_API="http://localhost:8000/api/v1/postgres/training-data/latest"
+# Set custom API endpoint (optional - defaults to production)
+export TRAINING_EXAMPLE_API="https://machine-learning-pipeline.onrender.com/api/v1/postgres/training-data/latest"
 
 # Run prediction
 python3 scripts/predict.py
 ```
 
-Default API endpoint: `https://machine-learning-pipeline.onrender.com/api/v1/postgres/training-data/latest`
+**Default API endpoint**: `https://machine-learning-pipeline.onrender.com/api/v1/postgres/training-data/latest`
 
 ## Development
 
@@ -496,10 +503,15 @@ uvicorn app.main:app --reload --port 8001
 
 ## API Documentation
 
-Once the server is running, access:
-- **Swagger UI**: http://localhost:8000 (interactive API documentation)
-- **ReDoc**: http://localhost:8000/redoc (alternative documentation)
-- **OpenAPI JSON**: http://localhost:8000/openapi.json (machine-readable spec)
+Access the live API documentation:
+- **Swagger UI**: https://machine-learning-pipeline.onrender.com (interactive API documentation)
+- **ReDoc**: https://machine-learning-pipeline.onrender.com/redoc (alternative documentation)
+- **OpenAPI JSON**: https://machine-learning-pipeline.onrender.com/openapi.json (machine-readable spec)
+
+For local development:
+- **Swagger UI**: http://localhost:8000
+- **ReDoc**: http://localhost:8000/redoc
+- **OpenAPI JSON**: http://localhost:8000/openapi.json
 
 ## License
 
