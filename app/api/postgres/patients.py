@@ -1,23 +1,51 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import List
+import math
 
 from app.core.database import get_postgres_session
 from app.core import models
-from app.api.postgres.schemas import PatientCreate, PatientResponse
+from app.api.postgres.schemas import PatientCreate, PatientResponse, PatientsListResponse
 
 router = APIRouter(tags=["PostgreSQL - Patients"])
 
 
 @router.get("/",
-    response_model=List[PatientResponse],
-    summary="Get all patients",
-    description="Retrieve all patient records with optional pagination"
+    response_model=PatientsListResponse,
+    summary="Get all patients with pagination",
+    description="Retrieve patient records with pagination support. Returns items, total count, page number, and total pages."
 )
-def get_all_patients(skip: int = 0, limit: int = 100, db: Session = Depends(get_postgres_session)):
+def get_all_patients(
+    page: int = Query(1, ge=1, description="Page number (starts from 1)"),
+    page_size: int = Query(100, ge=1, le=1000, description="Number of items per page (max 1000)"),
+    db: Session = Depends(get_postgres_session)
+):
+    """
+    Get paginated list of patients.
+    
+    - **page**: Page number (default: 1)
+    - **page_size**: Items per page (default: 100, max: 1000)
+    - Returns: List of patients with pagination metadata
+    """
     try:
-        patients = db.query(models.Patient).offset(skip).limit(limit).all()
-        return patients
+        # Get total count
+        total = db.query(func.count(models.Patient.PatientID)).scalar()
+        
+        # Calculate offset and total pages
+        skip = (page - 1) * page_size
+        total_pages = math.ceil(total / page_size) if total > 0 else 0
+        
+        # Get paginated results
+        patients = db.query(models.Patient).offset(skip).limit(page_size).all()
+        
+        return {
+            "items": patients,
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": total_pages
+        }
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

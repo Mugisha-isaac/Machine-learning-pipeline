@@ -96,3 +96,14 @@ dmypy.json
 # Optional: ignore compiled migrations or cache
 # =====================================
 alembic/versions/__pycache__/
+
+# =====================================
+# Data files (large CSV datasets)
+# =====================================
+*.csv
+diabetes.csv
+
+# =====================================
+# Tool scripts output
+# =====================================
+tools/test_*.py

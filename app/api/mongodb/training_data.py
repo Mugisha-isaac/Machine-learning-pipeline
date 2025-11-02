@@ -64,9 +64,9 @@ def get_all_latest_records(limit: int = 5):
 
 @router.get("/training-data/latest",
     summary="Get latest complete patient records for ML model training",
-    description="Retrieve latest patient records with all related health data joined together"
+    description="Retrieve latest patient records with all related health data joined together."
 )
-def get_latest_training_data(limit: int = 100):
+def get_latest_training_data(limit: int = 50):
     """
     Get the most recent patient records with all related information for ML model training.
     Returns complete flattened dataset including demographics, health conditions, lifestyle factors,
@@ -75,16 +75,23 @@ def get_latest_training_data(limit: int = 100):
     try:
         db = get_mongo_db()
         
-        # Get latest patients
+        if limit > 200:
+            limit = 200
+        
+        # Sort by PatientID descending to get "latest" IDs (which are recent)
+        # This is faster than sorting by updated_at which may not be indexed
         patients = list(
-            db[COLLECTIONS["patients"]].find().sort("updated_at", -1).limit(limit)
+            db[COLLECTIONS["patients"]]
+            .find()
+            .sort("PatientID", -1)  # Use indexed field for better performance
+            .limit(limit)
         )
         
         training_data = []
         for patient in patients:
             patient_id = patient.get("PatientID")
             
-            # Get related data for each patient
+            # Get related data for each patient (fast with indices)
             health_condition = db[COLLECTIONS["health_conditions"]].find_one({"PatientID": patient_id})
             lifestyle_factor = db[COLLECTIONS["lifestyle_factors"]].find_one({"PatientID": patient_id})
             health_metric = db[COLLECTIONS["health_metrics"]].find_one({"PatientID": patient_id})
@@ -129,7 +136,8 @@ def get_latest_training_data(limit: int = 100):
         return {
             "total": len(training_data),
             "limit": limit,
-            "records": training_data
+            "returned": len(training_data),
+            "records": training_data,
         }
     except Exception as e:
         raise HTTPException(
@@ -140,167 +148,86 @@ def get_latest_training_data(limit: int = 100):
 
 @router.get("/training-data/complete",
     summary="Get complete patient records for ML model training",
-    description="Retrieve patient records that have all related data (no null values)"
+    description="Retrieve patient records that have all related data (no null values). Uses optimized query with reduced limit."
 )
-def get_complete_training_data(skip: int = 0, limit: int = 1000):
+def get_complete_training_data(skip: int = 0, limit: int = 100):
     """
     Get patient records with complete data across all collections for ML model training.
     Only returns patients who have entries in all related collections with no null critical fields.
+    
+    OPTIMIZED: Uses smaller batch size and efficient query to prevent timeouts.
+    Maximum limit is 500 records per request to ensure fast response times.
     """
     try:
         db = get_mongo_db()
         
-        # Use aggregation pipeline to join all collections
-        pipeline = [
-            # Sort by updated_at descending
-            {"$sort": {"updated_at": -1}},
-            # Skip and limit
-            {"$skip": skip},
-            {"$limit": limit},
-            # Lookup health conditions
-            {
-                "$lookup": {
-                    "from": COLLECTIONS["health_conditions"],
-                    "localField": "PatientID",
-                    "foreignField": "PatientID",
-                    "as": "health_conditions"
-                }
-            },
-            # Lookup lifestyle factors
-            {
-                "$lookup": {
-                    "from": COLLECTIONS["lifestyle_factors"],
-                    "localField": "PatientID",
-                    "foreignField": "PatientID",
-                    "as": "lifestyle_factors"
-                }
-            },
-            # Lookup health metrics
-            {
-                "$lookup": {
-                    "from": COLLECTIONS["health_metrics"],
-                    "localField": "PatientID",
-                    "foreignField": "PatientID",
-                    "as": "health_metrics"
-                }
-            },
-            # Lookup healthcare access
-            {
-                "$lookup": {
-                    "from": COLLECTIONS["healthcare_access"],
-                    "localField": "PatientID",
-                    "foreignField": "PatientID",
-                    "as": "healthcare_access"
-                }
-            },
-            # Filter to only include patients with all related data
-            {
-                "$match": {
-                    "health_conditions": {"$ne": []},
-                    "lifestyle_factors": {"$ne": []},
-                    "health_metrics": {"$ne": []},
-                    "healthcare_access": {"$ne": []}
-                }
-            }
-        ]
+        # Limit maximum to prevent timeouts (MongoDB Atlas free tier has 5s timeout)
+        if limit > 500:
+            limit = 500
         
-        results = list(db[COLLECTIONS["patients"]].aggregate(pipeline))
+        # Simplified approach: Get patients first, then fetch related data
+        # This is faster than complex aggregation pipelines on large datasets
+        patients = list(
+            db[COLLECTIONS["patients"]]
+            .find()
+            .sort("PatientID", 1)  # Sort by PatientID for consistent pagination
+            .skip(skip)
+            .limit(limit)
+        )
         
         training_data = []
-        for patient in results:
-            # Get first element from each array (assuming one-to-one relationship)
-            condition = patient["health_conditions"][0] if patient.get("health_conditions") else {}
-            lifestyle = patient["lifestyle_factors"][0] if patient.get("lifestyle_factors") else {}
-            metric = patient["health_metrics"][0] if patient.get("health_metrics") else {}
-            access = patient["healthcare_access"][0] if patient.get("healthcare_access") else {}
+        for patient in patients:
+            patient_id = patient.get("PatientID")
             
-            # Flatten the record
-            record = {
-                "_id": str(patient["_id"]),
-                "PatientID": patient.get("PatientID"),
-                "Sex": patient.get("Sex"),
-                "Age": patient.get("Age"),
-                "Education": patient.get("Education"),
-                "Income": patient.get("Income"),
-                # Health Conditions
-                "Diabetes_012": condition.get("Diabetes_012"),
-                "HighBP": condition.get("HighBP"),
-                "HighChol": condition.get("HighChol"),
-                "Stroke": condition.get("Stroke"),
-                "HeartDiseaseorAttack": condition.get("HeartDiseaseorAttack"),
-                "DiffWalk": condition.get("DiffWalk"),
-                # Lifestyle Factors
-                "BMI": lifestyle.get("BMI"),
-                "Smoker": lifestyle.get("Smoker"),
-                "PhysActivity": lifestyle.get("PhysActivity"),
-                "Fruits": lifestyle.get("Fruits"),
-                "Veggies": lifestyle.get("Veggies"),
-                "HvyAlcoholConsump": lifestyle.get("HvyAlcoholConsump"),
-                # Health Metrics
-                "CholCheck": metric.get("CholCheck"),
-                "GenHlth": metric.get("GenHlth"),
-                "MentHlth": metric.get("MentHlth"),
-                "PhysHlth": metric.get("PhysHlth"),
-                # Healthcare Access
-                "AnyHealthcare": access.get("AnyHealthcare"),
-                "NoDocbcCost": access.get("NoDocbcCost"),
-            }
-            training_data.append(record)
+            # Fetch related documents individually (faster with proper indices)
+            condition = db[COLLECTIONS["health_conditions"]].find_one({"PatientID": patient_id})
+            lifestyle = db[COLLECTIONS["lifestyle_factors"]].find_one({"PatientID": patient_id})
+            metric = db[COLLECTIONS["health_metrics"]].find_one({"PatientID": patient_id})
+            access = db[COLLECTIONS["healthcare_access"]].find_one({"PatientID": patient_id})
+            
+            # Only include records that have ALL related data
+            if condition and lifestyle and metric and access:
+                # Flatten the record
+                record = {
+                    "_id": str(patient["_id"]),
+                    "PatientID": patient_id,
+                    "Sex": patient.get("Sex"),
+                    "Age": patient.get("Age"),
+                    "Education": patient.get("Education"),
+                    "Income": patient.get("Income"),
+                    # Health Conditions
+                    "Diabetes_012": condition.get("Diabetes_012"),
+                    "HighBP": condition.get("HighBP"),
+                    "HighChol": condition.get("HighChol"),
+                    "Stroke": condition.get("Stroke"),
+                    "HeartDiseaseorAttack": condition.get("HeartDiseaseorAttack"),
+                    "DiffWalk": condition.get("DiffWalk"),
+                    # Lifestyle Factors
+                    "BMI": lifestyle.get("BMI"),
+                    "Smoker": lifestyle.get("Smoker"),
+                    "PhysActivity": lifestyle.get("PhysActivity"),
+                    "Fruits": lifestyle.get("Fruits"),
+                    "Veggies": lifestyle.get("Veggies"),
+                    "HvyAlcoholConsump": lifestyle.get("HvyAlcoholConsump"),
+                    # Health Metrics
+                    "CholCheck": metric.get("CholCheck"),
+                    "GenHlth": metric.get("GenHlth"),
+                    "MentHlth": metric.get("MentHlth"),
+                    "PhysHlth": metric.get("PhysHlth"),
+                    # Healthcare Access
+                    "AnyHealthcare": access.get("AnyHealthcare"),
+                    "NoDocbcCost": access.get("NoDocbcCost"),
+                }
+                training_data.append(record)
         
-        # Get total count of complete records
-        count_pipeline = [
-            {
-                "$lookup": {
-                    "from": COLLECTIONS["health_conditions"],
-                    "localField": "PatientID",
-                    "foreignField": "PatientID",
-                    "as": "health_conditions"
-                }
-            },
-            {
-                "$lookup": {
-                    "from": COLLECTIONS["lifestyle_factors"],
-                    "localField": "PatientID",
-                    "foreignField": "PatientID",
-                    "as": "lifestyle_factors"
-                }
-            },
-            {
-                "$lookup": {
-                    "from": COLLECTIONS["health_metrics"],
-                    "localField": "PatientID",
-                    "foreignField": "PatientID",
-                    "as": "health_metrics"
-                }
-            },
-            {
-                "$lookup": {
-                    "from": COLLECTIONS["healthcare_access"],
-                    "localField": "PatientID",
-                    "foreignField": "PatientID",
-                    "as": "healthcare_access"
-                }
-            },
-            {
-                "$match": {
-                    "health_conditions": {"$ne": []},
-                    "lifestyle_factors": {"$ne": []},
-                    "health_metrics": {"$ne": []},
-                    "healthcare_access": {"$ne": []}
-                }
-            },
-            {"$count": "total"}
-        ]
-        
-        count_result = list(db[COLLECTIONS["patients"]].aggregate(count_pipeline))
-        total_count = count_result[0]["total"] if count_result else 0
+        # Get approximate total count (faster than exact count on large collections)
+        total_patients = db[COLLECTIONS["patients"]].estimated_document_count()
         
         return {
-            "total": total_count,
             "skip": skip,
             "limit": limit,
             "returned": len(training_data),
-            "records": training_data
+            "records": training_data,
         }
     except Exception as e:
         raise HTTPException(

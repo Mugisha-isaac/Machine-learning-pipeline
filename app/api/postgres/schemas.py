@@ -3,7 +3,19 @@ PostgreSQL Pydantic Schemas
 Request and response models for PostgreSQL API endpoints
 """
 from pydantic import BaseModel, ConfigDict
-from typing import Optional
+from typing import Optional, List, Generic, TypeVar
+
+T = TypeVar('T')
+
+# ==================== PAGINATION SCHEMA ====================
+
+class PaginatedResponse(BaseModel, Generic[T]):
+    """Generic paginated response wrapper"""
+    items: List[T]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
 
 
 # ==================== PATIENT SCHEMAS ====================
@@ -23,6 +35,15 @@ class PatientResponse(BaseModel):
     Income: Optional[int] = None
     
     model_config = ConfigDict(from_attributes=True)
+
+
+class PatientsListResponse(BaseModel):
+    """Paginated list of patients"""
+    items: List[PatientResponse]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
 
 
 # ==================== HEALTH CONDITION SCHEMAS ====================
