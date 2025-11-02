@@ -125,8 +125,3 @@ def verify_connections():
     except Exception as e:
         print(f"MongoDB connection failed: {e}")
         raise
-
-
-# Initialize tables on startup (optional - uncomment if needed)
-# from app.core.models import *
-# Base.metadata.create_all(bind=engine)
