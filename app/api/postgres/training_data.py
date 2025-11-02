@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 
 from app.core.database import get_postgres_session
 from app.core import models
@@ -9,68 +10,67 @@ router = APIRouter(tags=["PostgreSQL - Training Data"])
 
 @router.get("/latest",
     summary="Get latest complete patient records for model training",
-    description="Retrieve latest patient records with all related health data (conditions, lifestyle, metrics, access)"
+    description="Retrieve latest patient records with all related health data (conditions, lifestyle, metrics, access) using stored procedure"
 )
 def get_latest_training_data(limit: int = 100, db: Session = Depends(get_postgres_session)):
     """
     Get the most recent patient records with all related information for ML model training.
+    Uses GetPatientProfile stored procedure for efficient data retrieval.
     Returns complete dataset including demographics, health conditions, lifestyle factors,
     health metrics, and healthcare access information.
     """
     try:
-        # Get latest patients
+        # Get latest patient IDs first
         patients = db.query(models.Patient).order_by(models.Patient.PatientID.desc()).limit(limit).all()
+        patient_ids = [p.PatientID for p in patients]
+        
+        if not patient_ids:
+            return {
+                "total": 0,
+                "limit": limit,
+                "records": []
+            }
         
         training_data = []
-        for patient in patients:
-            # Get related data for each patient
-            health_conditions = db.query(models.HealthCondition).filter(
-                models.HealthCondition.PatientID == patient.PatientID
-            ).first()
+        # Call stored procedure for each patient
+        for patient_id in patient_ids:
+            result = db.execute(
+                text("SELECT * FROM GetPatientProfile(:patient_id)"),
+                {"patient_id": patient_id}
+            ).fetchone()
             
-            lifestyle_factors = db.query(models.LifestyleFactor).filter(
-                models.LifestyleFactor.PatientID == patient.PatientID
-            ).first()
-            
-            health_metrics = db.query(models.HealthMetric).filter(
-                models.HealthMetric.PatientID == patient.PatientID
-            ).first()
-            
-            healthcare_access = db.query(models.HealthcareAccess).filter(
-                models.HealthcareAccess.PatientID == patient.PatientID
-            ).first()
-            
-            # Combine all data into a single record
-            record = {
-                "PatientID": patient.PatientID,
-                "Sex": patient.Sex,
-                "Age": patient.Age,
-                "Education": patient.Education,
-                "Income": patient.Income,
-                # Health Conditions
-                "Diabetes_012": health_conditions.Diabetes_012 if health_conditions else None,
-                "HighBP": health_conditions.HighBP if health_conditions else None,
-                "HighChol": health_conditions.HighChol if health_conditions else None,
-                "Stroke": health_conditions.Stroke if health_conditions else None,
-                "HeartDiseaseorAttack": health_conditions.HeartDiseaseorAttack if health_conditions else None,
-                "DiffWalk": health_conditions.DiffWalk if health_conditions else None,
-                # Lifestyle Factors
-                "BMI": lifestyle_factors.BMI if lifestyle_factors else None,
-                "Smoker": lifestyle_factors.Smoker if lifestyle_factors else None,
-                "PhysActivity": lifestyle_factors.PhysActivity if lifestyle_factors else None,
-                "Fruits": lifestyle_factors.Fruits if lifestyle_factors else None,
-                "Veggies": lifestyle_factors.Veggies if lifestyle_factors else None,
-                "HvyAlcoholConsump": lifestyle_factors.HvyAlcoholConsump if lifestyle_factors else None,
-                # Health Metrics
-                "CholCheck": health_metrics.CholCheck if health_metrics else None,
-                "GenHlth": health_metrics.GenHlth if health_metrics else None,
-                "MentHlth": health_metrics.MentHlth if health_metrics else None,
-                "PhysHlth": health_metrics.PhysHlth if health_metrics else None,
-                # Healthcare Access
-                "AnyHealthcare": healthcare_access.AnyHealthcare if healthcare_access else None,
-                "NoDocbcCost": healthcare_access.NoDocbcCost if healthcare_access else None,
-            }
-            training_data.append(record)
+            if result:
+                # Access columns by index
+                record = {
+                    "PatientID": result[0],
+                    "Sex": result[1],
+                    "Age": result[2],
+                    "Education": result[3],
+                    "Income": result[4],
+                    # Health Conditions
+                    "Diabetes_012": result[6],
+                    "HighBP": result[7],
+                    "HighChol": result[8],
+                    "Stroke": result[9],
+                    "HeartDiseaseorAttack": result[10],
+                    "DiffWalk": result[11],
+                    # Lifestyle Factors
+                    "BMI": result[13],
+                    "Smoker": result[14],
+                    "PhysActivity": result[15],
+                    "Fruits": result[16],
+                    "Veggies": result[17],
+                    "HvyAlcoholConsump": result[18],
+                    # Health Metrics
+                    "CholCheck": result[20],
+                    "GenHlth": result[21],
+                    "MentHlth": result[22],
+                    "PhysHlth": result[23],
+                    # Healthcare Access
+                    "AnyHealthcare": result[25],
+                    "NoDocbcCost": result[26],
+                }
+                training_data.append(record)
         
         return {
             "total": len(training_data),
@@ -80,89 +80,74 @@ def get_latest_training_data(limit: int = 100, db: Session = Depends(get_postgre
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            detail=f"Error retrieving training data: {str(e)}"
         )
 
 
 @router.get("/complete",
     summary="Get all complete patient records for model training",
-    description="Retrieve all patient records that have complete data across all tables"
+    description="Retrieve all patient records that have complete data across all tables using stored procedure"
 )
 def get_complete_training_data(skip: int = 0, limit: int = 1000, db: Session = Depends(get_postgres_session)):
     """
     Get patient records with complete data (no null values) for ML model training.
+    Uses GetCompletePatientRecords stored procedure for efficient querying.
     Only returns patients who have entries in all related tables.
     """
     try:
-        # Query patients with all related data using joins
-        query = db.query(
-            models.Patient,
-            models.HealthCondition,
-            models.LifestyleFactor,
-            models.HealthMetric,
-            models.HealthcareAccess
-        ).join(
-            models.HealthCondition,
-            models.Patient.PatientID == models.HealthCondition.PatientID
-        ).join(
-            models.LifestyleFactor,
-            models.Patient.PatientID == models.LifestyleFactor.PatientID
-        ).join(
-            models.HealthMetric,
-            models.Patient.PatientID == models.HealthMetric.PatientID
-        ).join(
-            models.HealthcareAccess,
-            models.Patient.PatientID == models.HealthcareAccess.PatientID
-        ).order_by(models.Patient.PatientID.desc()).offset(skip).limit(limit)
-        
-        results = query.all()
+        # Call stored procedure to get complete patient records
+        results = db.execute(
+            text("SELECT * FROM GetCompletePatientRecords(:skip_count, :limit_count)"),
+            {"skip_count": skip, "limit_count": limit}
+        ).fetchall()
         
         training_data = []
-        for patient, condition, lifestyle, metric, access in results:
+        for result in results:
+            # Access columns by index
             record = {
-                "PatientID": patient.PatientID,
-                "Sex": patient.Sex,
-                "Age": patient.Age,
-                "Education": patient.Education,
-                "Income": patient.Income,
+                "PatientID": result[0],
+                "Sex": result[1],
+                "Age": result[2],
+                "Education": result[3],
+                "Income": result[4],
                 # Health Conditions
-                "Diabetes_012": condition.Diabetes_012,
-                "HighBP": condition.HighBP,
-                "HighChol": condition.HighChol,
-                "Stroke": condition.Stroke,
-                "HeartDiseaseorAttack": condition.HeartDiseaseorAttack,
-                "DiffWalk": condition.DiffWalk,
+                "Diabetes_012": result[5],
+                "HighBP": result[6],
+                "HighChol": result[7],
+                "Stroke": result[8],
+                "HeartDiseaseorAttack": result[9],
+                "DiffWalk": result[10],
                 # Lifestyle Factors
-                "BMI": lifestyle.BMI,
-                "Smoker": lifestyle.Smoker,
-                "PhysActivity": lifestyle.PhysActivity,
-                "Fruits": lifestyle.Fruits,
-                "Veggies": lifestyle.Veggies,
-                "HvyAlcoholConsump": lifestyle.HvyAlcoholConsump,
+                "BMI": result[11],
+                "Smoker": result[12],
+                "PhysActivity": result[13],
+                "Fruits": result[14],
+                "Veggies": result[15],
+                "HvyAlcoholConsump": result[16],
                 # Health Metrics
-                "CholCheck": metric.CholCheck,
-                "GenHlth": metric.GenHlth,
-                "MentHlth": metric.MentHlth,
-                "PhysHlth": metric.PhysHlth,
+                "CholCheck": result[17],
+                "GenHlth": result[18],
+                "MentHlth": result[19],
+                "PhysHlth": result[20],
                 # Healthcare Access
-                "AnyHealthcare": access.AnyHealthcare,
-                "NoDocbcCost": access.NoDocbcCost,
+                "AnyHealthcare": result[21],
+                "NoDocbcCost": result[22],
             }
             training_data.append(record)
         
-        # Get total count of complete records
-        total_count = db.query(models.Patient).join(
-            models.HealthCondition
-        ).join(
-            models.LifestyleFactor
-        ).join(
-            models.HealthMetric
-        ).join(
-            models.HealthcareAccess
-        ).count()
+        # Get total count using a simple query
+        total_count_query = db.execute(
+            text("""
+                SELECT COUNT(*) FROM "Patients" p
+                INNER JOIN "Health_Conditions" hc ON p."PatientID" = hc."PatientID"
+                INNER JOIN "Lifestyle_Factors" lf ON p."PatientID" = lf."PatientID"
+                INNER JOIN "Health_Metrics" hm ON p."PatientID" = hm."PatientID"
+                INNER JOIN "Healthcare_Access" ha ON p."PatientID" = ha."PatientID"
+            """)
+        ).scalar()
         
         return {
-            "total": total_count,
+            "total": total_count_query or 0,
             "skip": skip,
             "limit": limit,
             "returned": len(training_data),
@@ -171,5 +156,5 @@ def get_complete_training_data(skip: int = 0, limit: int = 1000, db: Session = D
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=str(e)
+            detail=f"Error retrieving complete training data: {str(e)}"
         )
