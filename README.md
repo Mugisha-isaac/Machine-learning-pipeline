@@ -95,8 +95,26 @@ ML pipeline/
 │       ├── database.py            # Database connections
 │       ├── models.py              # PostgreSQL SQLAlchemy models
 │       └── mongo_models.py        # MongoDB Pydantic schemas
+├── models/                        # Machine learning models
+│   ├── model_exp5.h5             # Trained Keras/TensorFlow model
+│   ├── scaler.joblib             # Feature scaler for normalization
+│   └── feature_names.txt         # List of model features
+├── scripts/                       # Utility scripts
+│   ├── predict.py                # Diabetes prediction script
+│   ├── train_model.py            # Model training script
+│   └── sample_database.py        # Database population script
+├── tests/                         # Test suite
+│   ├── __init__.py
+│   ├── conftest.py               # Pytest fixtures
+│   ├── test_postgres_endpoints.py
+│   ├── test_mongodb_endpoints.py
+│   ├── test_integration.py
+│   └── test_utils.py
 ├── dbdesign.sql                   # PostgreSQL schema
+├── stored_procedures.sql          # SQL stored procedures
+├── diabetes.csv                   # Training dataset
 ├── requirements.txt               # Python dependencies
+├── pytest.ini                     # Pytest configuration
 └── README.md
 ```
 
@@ -265,6 +283,88 @@ Each MongoDB document includes:
 - `created_at` (DateTime) - Record creation timestamp
 - `updated_at` (DateTime) - Last update timestamp
 - Additional fields matching PostgreSQL schema
+
+## Machine Learning Prediction
+
+### Using the Prediction Script
+
+The project includes a diabetes prediction script (`scripts/predict.py`) that uses a trained neural network model to predict diabetes risk.
+
+#### Prerequisites
+
+- Trained model file: `models/model_exp5.h5`
+- Scaler file: `models/scaler.joblib`
+- Feature names: `models/feature_names.txt`
+
+#### Running Predictions
+
+```bash
+cd scripts
+python3 predict.py
+```
+
+#### Example Output
+
+```
+=== Diabetes Prediction System ===
+
+✓ Model loaded successfully
+
+✓ Example record fetched from API
+
+Prepared feature vector:
+  CholCheck: 1.0
+  BMI: 25.0
+  Smoker: 0.0
+  Stroke: 0.0
+  HeartDiseaseorAttack: 1.0
+  PhysActivity: 1.0
+  Fruits: 1.0
+  Veggies: 0.0
+  HvyAlcoholConsump: 0.0
+  AnyHealthcare: 1.0
+  NoDocbcCost: 0.0
+  GenHlth: 2.0
+  MentHlth: 0.0
+  PhysHlth: 0.0
+  DiffWalk: 0.0
+  Sex: 0.0
+  Age: 9.0
+  Education: 6.0
+  Income: 2.0
+
+✓ Applied saved scaler
+
+=== Prediction ===
+Raw model output: 0.2183
+Predicted class: 0 -> No Diabetes
+==================
+```
+
+#### How It Works
+
+1. **Fetches Training Data**: The script retrieves a sample record from the API endpoint
+2. **Feature Preparation**: Normalizes and orders 21 features in the correct sequence
+3. **Scaling**: Applies the saved StandardScaler for feature normalization
+4. **Prediction**: Uses the trained Keras model to predict diabetes risk
+5. **Interpretation**: Classifies output into three categories:
+   - **0**: No Diabetes
+   - **1**: Prediabetes
+   - **2**: Diabetes
+
+#### Configuration
+
+The script uses environment variables for configuration:
+
+```bash
+# Set custom API endpoint
+export TRAINING_EXAMPLE_API="http://localhost:8000/api/v1/postgres/training-data/latest"
+
+# Run prediction
+python3 scripts/predict.py
+```
+
+Default API endpoint: `https://machine-learning-pipeline.onrender.com/api/v1/postgres/training-data/latest`
 
 ## Development
 
