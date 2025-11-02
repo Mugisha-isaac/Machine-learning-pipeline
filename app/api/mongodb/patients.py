@@ -111,12 +111,12 @@ def get_patient_by_id(patient_id: str):
 @router.post("/", 
     status_code=status.HTTP_201_CREATED,
     summary="Create a new patient",
-    description="Create a new patient record in MongoDB"
+    description="Create a new patient record in MongoDB (no need to send _id)"
 )
-def create_patient(patient: mongo_models.Patient):
+def create_patient(patient: mongo_models.PatientCreate):
     try:
         db = get_mongo_db()
-        patient_dict = patient.dict(exclude_unset=True, by_alias=True, exclude={"id"})
+        patient_dict = patient.model_dump(exclude_unset=True)
         patient_dict["created_at"] = datetime.utcnow()
         patient_dict["updated_at"] = datetime.utcnow()
         
@@ -130,11 +130,14 @@ def create_patient(patient: mongo_models.Patient):
         )
 
 
-@router.put("/{patient_id}")
-def update_patient(patient_id: str, patient: mongo_models.Patient):
+@router.put("/{patient_id}",
+    summary="Update patient",
+    description="Update patient record in MongoDB (no need to send _id)"
+)
+def update_patient(patient_id: str, patient: mongo_models.PatientUpdate):
     try:
         db = get_mongo_db()
-        patient_dict = patient.dict(exclude_unset=True, by_alias=True, exclude={"id"})
+        patient_dict = patient.model_dump(exclude_unset=True)
         patient_dict["updated_at"] = datetime.utcnow()
         
         result = db[COLLECTIONS["patients"]].update_one(

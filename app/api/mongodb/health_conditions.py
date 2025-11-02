@@ -114,12 +114,12 @@ def get_health_condition_by_id(condition_id: str):
 @router.post("/", 
     status_code=status.HTTP_201_CREATED,
     summary="Create a new health condition",
-    description="Create a new health condition record in MongoDB"
+    description="Create a new health condition record in MongoDB (no need to send _id)"
 )
-def create_health_condition(condition: mongo_models.HealthCondition):
+def create_health_condition(condition: mongo_models.HealthConditionCreate):
     try:
         db = get_mongo_db()
-        condition_dict = condition.dict(exclude_unset=True, by_alias=True, exclude={"id"})
+        condition_dict = condition.model_dump(exclude_unset=True)
         condition_dict["created_at"] = datetime.utcnow()
         condition_dict["updated_at"] = datetime.utcnow()
         
@@ -133,11 +133,14 @@ def create_health_condition(condition: mongo_models.HealthCondition):
         )
 
 
-@router.put("/{condition_id}")
-def update_health_condition(condition_id: str, condition: mongo_models.HealthCondition):
+@router.put("/{condition_id}",
+    summary="Update health condition",
+    description="Update health condition record in MongoDB (no need to send _id)"
+)
+def update_health_condition(condition_id: str, condition: mongo_models.HealthConditionUpdate):
     try:
         db = get_mongo_db()
-        condition_dict = condition.dict(exclude_unset=True, by_alias=True, exclude={"id"})
+        condition_dict = condition.model_dump(exclude_unset=True)
         condition_dict["updated_at"] = datetime.utcnow()
         
         result = db[COLLECTIONS["health_conditions"]].update_one(

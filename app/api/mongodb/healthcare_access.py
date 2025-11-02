@@ -114,12 +114,12 @@ def get_healthcare_access_by_id(access_id: str):
 @router.post("/",
     status_code=status.HTTP_201_CREATED,
     summary="Create a new healthcare access record",
-    description="Create a new healthcare access record in MongoDB"
+    description="Create a new healthcare access record in MongoDB (no need to send _id)"
 )
-def create_healthcare_access(access: mongo_models.HealthcareAccess):
+def create_healthcare_access(access: mongo_models.HealthcareAccessCreate):
     try:
         db = get_mongo_db()
-        access_dict = access.dict(exclude_unset=True, by_alias=True, exclude={"id"})
+        access_dict = access.model_dump(exclude_unset=True)
         access_dict["created_at"] = datetime.utcnow()
         access_dict["updated_at"] = datetime.utcnow()
         
@@ -133,11 +133,14 @@ def create_healthcare_access(access: mongo_models.HealthcareAccess):
         )
 
 
-@router.put("/{access_id}")
-def update_healthcare_access(access_id: str, access: mongo_models.HealthcareAccess):
+@router.put("/{access_id}",
+    summary="Update healthcare access",
+    description="Update healthcare access record in MongoDB (no need to send _id)"
+)
+def update_healthcare_access(access_id: str, access: mongo_models.HealthcareAccessUpdate):
     try:
         db = get_mongo_db()
-        access_dict = access.dict(exclude_unset=True, by_alias=True, exclude={"id"})
+        access_dict = access.model_dump(exclude_unset=True)
         access_dict["updated_at"] = datetime.utcnow()
         
         result = db[COLLECTIONS["healthcare_access"]].update_one(

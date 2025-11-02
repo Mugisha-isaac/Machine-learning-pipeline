@@ -114,12 +114,12 @@ def get_health_metric_by_id(metric_id: str):
 @router.post("/", 
     status_code=status.HTTP_201_CREATED,
     summary="Create a new health metric",
-    description="Create a new health metric record in MongoDB"
+    description="Create a new health metric record in MongoDB (no need to send _id)"
 )
-def create_health_metric(metric: mongo_models.HealthMetric):
+def create_health_metric(metric: mongo_models.HealthMetricCreate):
     try:
         db = get_mongo_db()
-        metric_dict = metric.dict(exclude_unset=True, by_alias=True, exclude={"id"})
+        metric_dict = metric.model_dump(exclude_unset=True)
         metric_dict["created_at"] = datetime.utcnow()
         metric_dict["updated_at"] = datetime.utcnow()
         
@@ -133,11 +133,14 @@ def create_health_metric(metric: mongo_models.HealthMetric):
         )
 
 
-@router.put("/{metric_id}")
-def update_health_metric(metric_id: str, metric: mongo_models.HealthMetric):
+@router.put("/{metric_id}",
+    summary="Update health metric",
+    description="Update health metric record in MongoDB (no need to send _id)"
+)
+def update_health_metric(metric_id: str, metric: mongo_models.HealthMetricUpdate):
     try:
         db = get_mongo_db()
-        metric_dict = metric.dict(exclude_unset=True, by_alias=True, exclude={"id"})
+        metric_dict = metric.model_dump(exclude_unset=True)
         metric_dict["updated_at"] = datetime.utcnow()
         
         result = db[COLLECTIONS["health_metrics"]].update_one(

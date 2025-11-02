@@ -114,12 +114,12 @@ def get_lifestyle_factor_by_id(lifestyle_id: str):
 @router.post("/", 
     status_code=status.HTTP_201_CREATED,
     summary="Create a new lifestyle factor",
-    description="Create a new lifestyle factor record in MongoDB"
+    description="Create a new lifestyle factor record in MongoDB (no need to send _id)"
 )
-def create_lifestyle_factor(lifestyle: mongo_models.LifestyleFactor):
+def create_lifestyle_factor(lifestyle: mongo_models.LifestyleFactorCreate):
     try:
         db = get_mongo_db()
-        lifestyle_dict = lifestyle.dict(exclude_unset=True, by_alias=True, exclude={"id"})
+        lifestyle_dict = lifestyle.model_dump(exclude_unset=True)
         lifestyle_dict["created_at"] = datetime.utcnow()
         lifestyle_dict["updated_at"] = datetime.utcnow()
         
@@ -133,11 +133,14 @@ def create_lifestyle_factor(lifestyle: mongo_models.LifestyleFactor):
         )
 
 
-@router.put("/{lifestyle_id}")
-def update_lifestyle_factor(lifestyle_id: str, lifestyle: mongo_models.LifestyleFactor):
+@router.put("/{lifestyle_id}",
+    summary="Update lifestyle factor",
+    description="Update lifestyle factor record in MongoDB (no need to send _id)"
+)
+def update_lifestyle_factor(lifestyle_id: str, lifestyle: mongo_models.LifestyleFactorUpdate):
     try:
         db = get_mongo_db()
-        lifestyle_dict = lifestyle.dict(exclude_unset=True, by_alias=True, exclude={"id"})
+        lifestyle_dict = lifestyle.model_dump(exclude_unset=True)
         lifestyle_dict["updated_at"] = datetime.utcnow()
         
         result = db[COLLECTIONS["lifestyle_factors"]].update_one(

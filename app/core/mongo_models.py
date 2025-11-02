@@ -35,8 +35,44 @@ class PyObjectId(str):
         raise ValueError("Invalid ObjectId")
 
 
+# Request schemas (for POST/PUT - no _id field)
+class HealthConditionCreate(BaseModel):
+    """Schema for creating health conditions."""
+    PatientID: int
+    ConditionID: Optional[int] = None
+    Diabetes_012: Optional[bool] = Field(None, description="0=no, 1=prediabetes, 2=diabetes")
+    HighBP: Optional[bool] = None
+    HighChol: Optional[bool] = None
+    Stroke: Optional[bool] = None
+    HeartDiseaseorAttack: Optional[bool] = None
+    DiffWalk: Optional[bool] = None
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True
+    )
+
+
+class HealthConditionUpdate(BaseModel):
+    """Schema for updating health conditions."""
+    PatientID: Optional[int] = None
+    ConditionID: Optional[int] = None
+    Diabetes_012: Optional[bool] = Field(None, description="0=no, 1=prediabetes, 2=diabetes")
+    HighBP: Optional[bool] = None
+    HighChol: Optional[bool] = None
+    Stroke: Optional[bool] = None
+    HeartDiseaseorAttack: Optional[bool] = None
+    DiffWalk: Optional[bool] = None
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True
+    )
+
+
+# Response schema (includes _id)
 class HealthCondition(BaseModel):
-    """Patient health conditions (MongoDB version)."""
+    """Patient health conditions (MongoDB version) - Response schema."""
     id: Optional[PyObjectId] = Field(default=None, alias="_id")
     PatientID: int
     ConditionID: Optional[int] = None
@@ -56,8 +92,42 @@ class HealthCondition(BaseModel):
     )
 
 
+class LifestyleFactorCreate(BaseModel):
+    """Schema for creating lifestyle factors."""
+    PatientID: int
+    LifestyleID: Optional[int] = None
+    BMI: Optional[float] = None
+    Smoker: Optional[bool] = None
+    PhysActivity: Optional[bool] = None
+    Fruits: Optional[bool] = None
+    Veggies: Optional[bool] = None
+    HvyAlcoholConsump: Optional[bool] = None
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True
+    )
+
+
+class LifestyleFactorUpdate(BaseModel):
+    """Schema for updating lifestyle factors."""
+    PatientID: Optional[int] = None
+    LifestyleID: Optional[int] = None
+    BMI: Optional[float] = None
+    Smoker: Optional[bool] = None
+    PhysActivity: Optional[bool] = None
+    Fruits: Optional[bool] = None
+    Veggies: Optional[bool] = None
+    HvyAlcoholConsump: Optional[bool] = None
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True
+    )
+
+
 class LifestyleFactor(BaseModel):
-    """Patient lifestyle factors (MongoDB version)."""
+    """Patient lifestyle factors (MongoDB version) - Response schema."""
     id: Optional[PyObjectId] = Field(default=None, alias="_id")
     PatientID: int
     LifestyleID: Optional[int] = None
@@ -77,8 +147,38 @@ class LifestyleFactor(BaseModel):
     )
 
 
+class HealthMetricCreate(BaseModel):
+    """Schema for creating health metrics."""
+    PatientID: int
+    MetricsID: Optional[int] = None
+    CholCheck: Optional[bool] = Field(None, description="Cholesterol check in last 5 years")
+    GenHlth: Optional[int] = Field(None, description="Scale 1-5")
+    MentHlth: Optional[int] = Field(None, description="Days of poor mental health in last 30 days")
+    PhysHlth: Optional[int] = Field(None, description="Days of poor physical health in last 30 days")
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True
+    )
+
+
+class HealthMetricUpdate(BaseModel):
+    """Schema for updating health metrics."""
+    PatientID: Optional[int] = None
+    MetricsID: Optional[int] = None
+    CholCheck: Optional[bool] = Field(None, description="Cholesterol check in last 5 years")
+    GenHlth: Optional[int] = Field(None, description="Scale 1-5")
+    MentHlth: Optional[int] = Field(None, description="Days of poor mental health in last 30 days")
+    PhysHlth: Optional[int] = Field(None, description="Days of poor physical health in last 30 days")
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True
+    )
+
+
 class HealthMetric(BaseModel):
-    """Patient health metrics and screenings (MongoDB version)."""
+    """Patient health metrics and screenings (MongoDB version) - Response schema."""
     id: Optional[PyObjectId] = Field(default=None, alias="_id")
     PatientID: int
     MetricsID: Optional[int] = None
@@ -96,8 +196,34 @@ class HealthMetric(BaseModel):
     )
 
 
+class HealthcareAccessCreate(BaseModel):
+    """Schema for creating healthcare access records."""
+    PatientID: int
+    AccessID: Optional[int] = None
+    AnyHealthcare: Optional[bool] = None
+    NoDocbcCost: Optional[bool] = Field(None, description="Could not see doctor due to cost")
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True
+    )
+
+
+class HealthcareAccessUpdate(BaseModel):
+    """Schema for updating healthcare access records."""
+    PatientID: Optional[int] = None
+    AccessID: Optional[int] = None
+    AnyHealthcare: Optional[bool] = None
+    NoDocbcCost: Optional[bool] = Field(None, description="Could not see doctor due to cost")
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True
+    )
+
+
 class HealthcareAccess(BaseModel):
-    """Patient healthcare access information (MongoDB version)."""
+    """Patient healthcare access information (MongoDB version) - Response schema."""
     id: Optional[PyObjectId] = Field(default=None, alias="_id")
     PatientID: int
     AccessID: Optional[int] = None
@@ -113,8 +239,36 @@ class HealthcareAccess(BaseModel):
     )
 
 
+class PatientCreate(BaseModel):
+    """Schema for creating patients."""
+    PatientID: int
+    Sex: Optional[bool] = Field(None, description="0 for female, 1 for male")
+    Age: Optional[int] = None
+    Education: Optional[int] = None
+    Income: Optional[int] = None
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True
+    )
+
+
+class PatientUpdate(BaseModel):
+    """Schema for updating patients."""
+    PatientID: Optional[int] = None
+    Sex: Optional[bool] = Field(None, description="0 for female, 1 for male")
+    Age: Optional[int] = None
+    Education: Optional[int] = None
+    Income: Optional[int] = None
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True
+    )
+
+
 class Patient(BaseModel):
-    """Patient demographic information (MongoDB version)."""
+    """Patient demographic information (MongoDB version) - Response schema."""
     id: Optional[PyObjectId] = Field(default=None, alias="_id")
     PatientID: int
     Sex: Optional[bool] = Field(None, description="0 for female, 1 for male")
