@@ -78,8 +78,8 @@ def main():
     # Save model and scaler
     model.save(MODEL_PATH)
     joblib.dump(scaler, SCALER_PATH)
-    print(f"\n✓ Model saved to {MODEL_PATH}")
-    print(f"✓ Scaler saved to {SCALER_PATH}")
+    print(f"\n Model saved to {MODEL_PATH}")
+    print(f"Scaler saved to {SCALER_PATH}")
 
 if __name__ == "__main__":
     main()
